@@ -101,5 +101,14 @@ namespace CodeWizBE.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+        [HttpGet("user/details")]
+        public IActionResult GetUserDetails()
+        {
+            string userId = HttpContext.Items["UserId"]?.ToString();
+            string username = HttpContext.Items["Username"]?.ToString();
+
+            return Ok(userId);
+        }
     }
+
 }
