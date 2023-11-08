@@ -1,6 +1,11 @@
 ﻿using CodeWizBE.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace CodeWizBE.Controllers
 {
@@ -13,7 +18,7 @@ namespace CodeWizBE.Controllers
         {
             _context = context;
         }
-        [HttpGet("/getUsers")]
+        [HttpGet("/api/profile/getUser")]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _context.Users.ToListAsync();
@@ -55,7 +60,9 @@ namespace CodeWizBE.Controllers
                 .FirstOrDefaultAsync();
                     if (existingUser != null)
                     {
-                        return Ok("Giriş Başarılı");
+                        string jwtSecret = GenerateJwtToken(existingUser);
+                        return Ok(jwtSecret);
+                        
                     }
                     else
                     {
@@ -68,6 +75,31 @@ namespace CodeWizBE.Controllers
                 }
             }
             return BadRequest();
+        }
+        private string GenerateJwtToken(User user)
+        {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .Build();
+
+            string jwtSecretKey = config.GetSection("SecretKey")["jwtSecret"];
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey));
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim("userId", user.UserId.ToString()),
+                    new Claim("username", user.UserName)
+                }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature),
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
     }
 }
