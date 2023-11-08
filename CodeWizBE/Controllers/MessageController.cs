@@ -47,6 +47,21 @@ namespace CodeWizBE.Controllers
                 .Where(u => u.User.UserId == userId).ToListAsync();
             return Ok(chatList);
         }
+        [HttpDelete("api/deletechat")]
+        public async Task<IActionResult> deleteChat(int chatId)
+        {
+            int userId = Convert.ToInt32(HttpContext.Items["UserId"]);
+            var chat = await _context.Chats
+            .Include(c => c.Messages)
+            .FirstOrDefaultAsync(c => c.User.UserId == userId && c.ChatId == chatId);
+            if (chat == null)
+            {
+                return NotFound("Chat not found");
+            }
+            _context.Chats.Remove(chat);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
         [HttpGet("/api/getmessages")]
         public async Task<IActionResult> getMessagesByChatId(int chatId)
         {
@@ -58,8 +73,35 @@ namespace CodeWizBE.Controllers
             {
                 return NotFound("Chat not found");
             }
-            var messages = chat.Messages;
+            var messages = chat.Messages.Select(m => new
+            {
+                m.MessageId,
+                m.MessageContent,
+                m.UserMessage
+            });
+
             return Ok(messages);
+        }
+        [HttpPost("/api/addmessage")]
+        public async Task<IActionResult> AddMessagesByChatId(int chatId, [FromBody] MessageDTO message)
+        {
+            int userId = Convert.ToInt32(HttpContext.Items["UserId"]);
+            var chat = await _context.Chats
+            .Include(c => c.Messages)
+            .FirstOrDefaultAsync(c => c.User.UserId == userId && c.ChatId == chatId);
+            if (chat == null)
+            {
+                return NotFound("Chat not found");
+            }
+            var newMessage = new Message
+            {
+                MessageContent = message.MessageContent,
+                UserMessage = message.UserMessage,
+                Chat = chat
+            };
+            _context.Messages.Add(newMessage);
+            await _context.SaveChangesAsync();
+            return Ok();
         }
     }
 }
