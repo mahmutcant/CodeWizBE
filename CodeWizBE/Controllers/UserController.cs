@@ -21,7 +21,9 @@ namespace CodeWizBE.Controllers
         [HttpGet("/api/profile/getUser")]
         public async Task<IActionResult> GetAllUsers()
         {
-            var users = await _context.Users.ToListAsync();
+            var users = await _context.Users.
+                Include(u => u.Chats)
+                .ToListAsync();
             return Ok(users);
         }
         [HttpPost("/register")]
