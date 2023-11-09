@@ -63,7 +63,13 @@ namespace CodeWizBE.Controllers
                     if (existingUser != null)
                     {
                         string jwtSecret = GenerateJwtToken(existingUser);
-                        return Ok(jwtSecret);
+                        var response = new
+                        {
+                            Token = jwtSecret,
+                            userName = existingUser.UserName,
+                            userEmail = existingUser.UserEmail
+                        };
+                        return Ok(response);
                         
                     }
                     else
@@ -104,12 +110,25 @@ namespace CodeWizBE.Controllers
             return tokenHandler.WriteToken(token);
         }
         [HttpGet("user/details")]
-        public IActionResult GetUserDetails()
+        public async Task<IActionResult> GetUserDetails()
         {
-            string userId = HttpContext.Items["UserId"]?.ToString();
+            int userId = Convert.ToInt32(HttpContext.Items["UserId"]);
             string username = HttpContext.Items["Username"]?.ToString();
-
-            return Ok(userId);
+            var existingUser = await _context.Users
+                .Where(u => u.UserId == userId)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.UserName,
+                    u.UserEmail,
+                    Chats = u.Chats.Select(c => new
+                    {
+                        c.ChatId,
+                        c.ChatName,
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+            return Ok(existingUser);
         }
     }
 
