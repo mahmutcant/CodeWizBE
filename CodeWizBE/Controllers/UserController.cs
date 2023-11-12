@@ -121,6 +121,8 @@ namespace CodeWizBE.Controllers
                     u.UserId,
                     u.UserName,
                     u.UserEmail,
+                    u.FirstName,
+                    u.LastName,
                     Chats = u.Chats.Select(c => new
                     {
                         c.ChatId,
